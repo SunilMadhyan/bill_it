@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:bill_it/models/item/item.dart';
+import 'package:csv/csv.dart';
 
 import '../../models/billing/billing_data.dart';
 import '../../models/billing/billing_item.dart';
@@ -11,10 +15,10 @@ BillingItem item5 = BillingItem(10006, 2, 100);
 BillingItem item6 = BillingItem(10007, 3, 350);
 BillingItem item7 = BillingItem.withName(10001, '1 kg Nails', 2, 100);
 BillingItem item8 =
-    BillingItem.withName(10002, 'Asian Paint Blue 650g', 6, 240);
+    BillingItem.withName(10002, 'Asian Paint Blue 650ml', 6, 240);
 BillingItem item9 = BillingItem.withName(1001, '1.5 kg Nails', 2, 100);
 BillingItem item10 =
-    BillingItem.withName(1002, 'Asian Paint Gold 480g', 6, 240);
+    BillingItem.withName(1002, 'Asian Paint Gold 480ml', 6, 240);
 
 BillingData billingData = BillingData(
     001,
@@ -33,15 +37,7 @@ Item _item3 = Item(10004, 'Paint Brush', 1, 95);
 Item _item4 = Item(10005, '0.5kg Nails', 1, 55);
 Item _item5 = Item(10006, '2kg Wire Bundle', 1, 180);
 Item _item6 = Item(10007, 'Mid size door lock', 1, 120);
-
-Map<String, Item> availableItems = {
-  '${_item1.itemId}': _item1,
-  '${_item2.itemId}': _item2,
-  '${_item3.itemId}': _item3,
-  '${_item4.itemId}': _item4,
-  '${_item5.itemId}': _item5,
-  '${_item6.itemId}': _item6,
-};
+Map<String, Item> availableItems = {};
 
 class AppDB {
   static BillingData getBillingData() {
@@ -50,5 +46,26 @@ class AppDB {
 
   static Map<String, Item> getAvailableItems() {
     return availableItems;
+  }
+
+  AppDB();
+
+  doSomeWork() async {
+    List<List<dynamic>> temp = await openFile();
+    temp.forEach((e) => {
+          availableItems.putIfAbsent(e[0].toString(),
+              () => Item(e[0], e[1], e[2], double.tryParse(e[3].toString())!))
+        });
+  }
+
+  openFile() async {
+    File f = File('./db.csv');
+    print("CSV to List");
+    final input = f.openRead();
+    final fields = await input
+        .transform(utf8.decoder)
+        .transform(const CsvToListConverter())
+        .toList();
+    return fields;
   }
 }

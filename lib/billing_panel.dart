@@ -1,11 +1,12 @@
 // ignore_for_file: prefer_const_constructors
 
+import 'package:bill_it/models/billing/billing_item.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart' as material;
 import './shared/db/db.dart';
 import 'models/billing/billing_data.dart';
+import 'models/billing_data_source.dart';
 import 'models/item/item.dart';
 
 class BillingPanel extends StatefulWidget {
@@ -17,28 +18,72 @@ class BillingPanel extends StatefulWidget {
 class _BillingPanelState extends State<BillingPanel> {
   BillingData billData = AppDB.getBillingData();
   Map<String, Item> items = AppDB.getAvailableItems();
+  late BillingDataSource billingDataSource =
+      BillingDataSource(billData.items, items, performCalculation);
 
-  List<CurrentBillingData> currentBilling = <CurrentBillingData>[];
-  late CurrentBillingDataSource currentBillingDataSource;
-  final TextEditingController _partyName =
-      TextEditingController(text: 'Sunil Maheshkumar Madhyan');
-  final TextEditingController _billNo = TextEditingController(text: '143');
+  final partyNameInputBox = TextEditingController();
+  final billNoInputBox = TextEditingController();
   final nameInputBox = TextEditingController();
   final codeInputBox = TextEditingController();
   final qtyInputBox = TextEditingController();
   final rateInputBox = TextEditingController();
+  final discountInputBox = TextEditingController(text: '0');
+  final packageChargeInputBox = TextEditingController(text: '0');
   final amountInputBox = TextEditingController();
+  final totalAmountInputBox = TextEditingController();
+  final totalNetAmountInputBox = TextEditingController();
 
   DateTime date = DateTime.now();
+
+  void calculateTotalNetAmount([String val = '']) {
+    billData.totalNetAmount = (billData.totalAmount) -
+        ((billData.totalAmount) *
+            double.tryParse(discountInputBox.text)! /
+            100) +
+        double.tryParse(packageChargeInputBox.text)!;
+    totalNetAmountInputBox.text = billData.totalNetAmount.toString();
+  }
+
+  void calculateTotalAmount() {
+    billData.totalAmount = billData.items.fold<double>(
+        0,
+        (previousValue, item) =>
+            item.itemRate * item.itemQuantity + previousValue);
+    totalAmountInputBox.text = billData.totalAmount.toString();
+  }
+
+  void performCalculation() {
+    calculateTotalAmount();
+    calculateTotalNetAmount();
+  }
+
+  void addItemToBill() {
+    if (codeInputBox.text.isEmpty) return;
+    if (qtyInputBox.text.isEmpty) return;
+    if (rateInputBox.text.isEmpty) return;
+    BillingItem newItem = BillingItem(int.parse(codeInputBox.text),
+        int.parse(qtyInputBox.text), double.parse(rateInputBox.text));
+    billData.items.insert(billData.items.length, newItem);
+
+    billingDataSource.buildDataGridRows();
+    billingDataSource.updateDataGridSource();
+
+    performCalculation();
+    clearInputBoxes();
+  }
+
+  clearInputBoxes() {
+    codeInputBox.text = '';
+    qtyInputBox.text = '';
+    rateInputBox.text = '';
+    nameInputBox.text = '';
+    amountInputBox.text = '';
+  }
 
   @override
   void initState() {
     super.initState();
-    qtyInputBox.text = '0.0';
-    rateInputBox.text = '0.0';
-    currentBilling = getCurrentBillingData();
-    currentBillingDataSource =
-        CurrentBillingDataSource(currentBillingData: currentBilling);
+    performCalculation();
   }
 
   @override
@@ -56,6 +101,7 @@ class _BillingPanelState extends State<BillingPanel> {
             ),
           ],
         ),
+
         // Party Name, Date and Billing No
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -66,7 +112,7 @@ class _BillingPanelState extends State<BillingPanel> {
                 child: TextBox(
                   style: const TextStyle(fontSize: 16, color: Colors.black),
                   placeholder: 'Enter Party Name',
-                  controller: _partyName,
+                  controller: partyNameInputBox,
                   prefix: Text('Name:'),
                   prefixMode: OverlayVisibilityMode.editing,
                 )),
@@ -74,8 +120,8 @@ class _BillingPanelState extends State<BillingPanel> {
               width: 285,
               child: DatePicker(
                 selected: date,
-                startYear: 2020,
-                endYear: 2025,
+                startYear: date.year - 2,
+                endYear: date.year + 2,
                 onChanged: (v) => setState(() => date = v),
               ),
             ),
@@ -84,11 +130,12 @@ class _BillingPanelState extends State<BillingPanel> {
                 child: TextBox(
                   style: const TextStyle(fontSize: 16, color: Colors.black),
                   placeholder: 'Billing Number',
-                  controller: _billNo,
+                  controller: billNoInputBox,
                 )),
           ],
         ),
-        // Item details input box Item Code, Name, Qrt, Rate, Amount
+
+        // Item details input box Item Code, Name, Qty, Rate, Amount
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
@@ -104,14 +151,6 @@ class _BillingPanelState extends State<BillingPanel> {
                         items[text]?.toString() ?? 'Not available';
                   },
                 )),
-            // SizedBox(
-            //     width: 300,
-            //     child: TextBox(
-            //       style: TextStyle(fontSize: 16, color: Colors.black),
-            //       placeholder: 'Enter Item Name',
-            //       prefix: Text('Item:'),
-            //       prefixMode: OverlayVisibilityMode.editing,
-            //     )),
             SizedBox(
                 width: 300,
                 child: AutoSuggestBox(
@@ -161,13 +200,13 @@ class _BillingPanelState extends State<BillingPanel> {
               width: 35,
               child: IconButton(
                 icon: Icon(FluentIcons.add),
-                onPressed: () {
-                  print('pressed icon button');
-                },
+                onPressed: addItemToBill,
               ),
             ),
           ],
         ),
+
+        // Billing Items Grid
         Row(
           children: [
             Container(
@@ -178,7 +217,7 @@ class _BillingPanelState extends State<BillingPanel> {
                 rowHeight: 35,
                 allowSwiping: true,
                 isScrollbarAlwaysShown: true,
-                source: currentBillingDataSource,
+                source: billingDataSource,
                 columnWidthMode: ColumnWidthMode.fill,
                 allowEditing: true,
                 selectionMode: SelectionMode.single,
@@ -245,13 +284,16 @@ class _BillingPanelState extends State<BillingPanel> {
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: const [
+          children: [
             SizedBox(
                 width: 200,
                 child: TextBox(
                   style: TextStyle(fontSize: 16, color: Colors.black),
                   placeholder: 'Discount',
                   header: 'Discount',
+                  outsidePrefix: Text(' % '),
+                  onChanged: calculateTotalNetAmount,
+                  controller: discountInputBox,
                 )),
             SizedBox(
                 width: 200,
@@ -259,25 +301,32 @@ class _BillingPanelState extends State<BillingPanel> {
                     style: TextStyle(fontSize: 16, color: Colors.black),
                     header: "Total Amount",
                     placeholder: 'Auto Calculated',
+                    outsidePrefix: Text('Rs. '),
+                    controller: totalAmountInputBox,
                     readOnly: true)),
           ],
         ),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: const [
+          children: [
             SizedBox(
                 width: 200,
                 child: TextBox(
                   style: TextStyle(fontSize: 16, color: Colors.black),
                   header: 'Packing Charges',
                   placeholder: 'Packing Charges',
+                  outsidePrefix: Text('Rs. '),
+                  controller: packageChargeInputBox,
+                  onChanged: calculateTotalNetAmount,
                 )),
             SizedBox(
                 width: 200,
                 child: TextBox(
                     style: TextStyle(fontSize: 16, color: Colors.black),
-                    header: "After Discount",
+                    header: "After Discount + Packaging Charge",
                     placeholder: 'Auto Calculated',
+                    outsidePrefix: Text('Rs. '),
+                    controller: totalNetAmountInputBox,
                     readOnly: true)),
           ],
         ),
@@ -293,6 +342,8 @@ class _BillingPanelState extends State<BillingPanel> {
                 ))
           ],
         ),
+
+        // Elevaded Buttons -  New, Clear, Save, Print
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0),
           child: Row(
@@ -366,182 +417,6 @@ class _BillingPanelState extends State<BillingPanel> {
           ),
         ),
       ],
-    );
-  }
-
-  List<CurrentBillingData> getCurrentBillingData() {
-    return [
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-      CurrentBillingData(10001, 'James', 20, 75),
-    ];
-  }
-}
-
-class CurrentBillingData {
-  /// Creates the employee class with required details.
-  CurrentBillingData(
-      this.itemId, this.itemName, this.itemQuantity, this.itemRate) {
-    itemAmount = (itemQuantity * itemRate);
-    srNo = ++length;
-  }
-
-  static int length = 0;
-
-  late int srNo;
-
-  late double itemAmount;
-
-  ///
-  int itemId;
-
-  ///
-  String itemName;
-
-  ///
-  int itemQuantity;
-
-  ///
-  double itemRate;
-
-  DataGridRow getDataGridRow() {
-    return DataGridRow(cells: <DataGridCell>[
-      DataGridCell<int>(columnName: 'srNo', value: srNo),
-      DataGridCell<int>(columnName: 'itemId', value: itemId),
-      DataGridCell<String>(columnName: 'itemName', value: itemName),
-      DataGridCell<int>(columnName: 'itemQuantity', value: itemQuantity),
-      DataGridCell<double>(columnName: 'itemRate', value: itemRate),
-      DataGridCell<double>(columnName: 'itemAmount', value: itemAmount),
-    ]);
-  }
-}
-
-/// An object to set the employee collection data source to the datagrid. This
-/// is used to map the employee data to the datagrid widget.
-class CurrentBillingDataSource extends DataGridSource {
-  /// Creates the employee data source class with required details.
-  CurrentBillingDataSource(
-      {required List<CurrentBillingData> currentBillingData}) {
-    _currentBillingData =
-        currentBillingData.map<DataGridRow>((e) => e.getDataGridRow()).toList();
-  }
-
-  List<DataGridRow> _currentBillingData = [];
-
-  @override
-  List<DataGridRow> get rows => _currentBillingData;
-
-  @override
-  DataGridRowAdapter buildRow(DataGridRow row) {
-    return DataGridRowAdapter(
-        cells: row.getCells().map<Widget>((e) {
-      return Container(
-        alignment: Alignment.center,
-        padding: EdgeInsets.all(8.0),
-        child: Text(e.value.toString()),
-      );
-    }).toList());
-  }
-
-  dynamic newCellValue;
-
-  /// Help to control the editable text in [TextField] widget.
-  TextEditingController editingController = TextEditingController();
-
-  @override
-  void onCellSubmit(DataGridRow dataGridRow, RowColumnIndex rowColumnIndex,
-      GridColumn column) {
-    final dynamic oldValue = dataGridRow
-            .getCells()
-            .firstWhereOrNull((DataGridCell dataGridCell) =>
-                dataGridCell.columnName == column.columnName)
-            ?.value ??
-        '';
-
-    final int dataRowIndex = _currentBillingData.indexOf(dataGridRow);
-
-    if (newCellValue == null || oldValue == newCellValue) {
-      return;
-    }
-
-    if (column.columnName == 'itemRate' ||
-        column.columnName == 'itemQuantity') {
-      _currentBillingData[dataRowIndex].getCells()[rowColumnIndex.columnIndex] =
-          DataGridCell<double>(
-              columnName: column.columnName,
-              value: double.tryParse(newCellValue));
-
-      double money = _currentBillingData[dataRowIndex]
-          .getCells()[column.columnName == 'itemRate'
-              ? rowColumnIndex.columnIndex - 1
-              : rowColumnIndex.columnIndex + 1]
-          .value;
-
-      _currentBillingData[dataRowIndex].getCells()[5] = DataGridCell<double>(
-          columnName: 'itemAmount', value: double.parse(newCellValue) * money);
-    }
-  }
-
-  @override
-  Widget? buildEditWidget(DataGridRow dataGridRow,
-      RowColumnIndex rowColumnIndex, GridColumn column, CellSubmit submitCell) {
-    // Text going to display on editable widget
-    final String displayText = dataGridRow
-            .getCells()
-            .firstWhereOrNull((DataGridCell dataGridCell) =>
-                dataGridCell.columnName == column.columnName)
-            ?.value
-            ?.toString() ??
-        '';
-
-    // The new cell value must be reset.
-    // To avoid committing the [DataGridCell] value that was previously edited
-    // into the current non-modified [DataGridCell].
-    newCellValue = null;
-
-    final bool isNumericType =
-        column.columnName == 'id' || column.columnName == 'salary';
-
-    return Container(
-      alignment: isNumericType ? Alignment.centerRight : Alignment.centerLeft,
-      child: TextBox(
-        autofocus: true,
-        controller: editingController..text = displayText,
-        textAlign: isNumericType ? TextAlign.right : TextAlign.left,
-        keyboardType: isNumericType ? TextInputType.number : TextInputType.text,
-        onChanged: (String value) {
-          if (value.isNotEmpty) {
-            if (isNumericType) {
-              newCellValue = int.parse(value);
-            } else {
-              newCellValue = value;
-            }
-          } else {
-            newCellValue = null;
-          }
-        },
-        onSubmitted: (String value) {
-          // In Mobile Platform.
-          // Call [CellSubmit] callback to fire the canSubmitCell and
-          // onCellSubmit to commit the new value in single place.
-          submitCell();
-        },
-      ),
     );
   }
 }

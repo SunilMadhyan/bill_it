@@ -6,13 +6,11 @@ part 'billing_item.g.dart';
 class BillingItem {
   BillingItem(this.itemId, this.itemQuantity, this.itemRate) {
     itemAmount = (itemQuantity * itemRate);
-    srNo = ++length;
   }
 
   BillingItem.withName(
       this.itemId, this.itemName, this.itemQuantity, this.itemRate) {
     itemAmount = (itemQuantity * itemRate);
-    srNo = ++length;
   }
 
   static int length = 0;
@@ -25,22 +23,23 @@ class BillingItem {
 
   double itemRate;
 
-  late int srNo;
-
   late double itemAmount;
 
   factory BillingItem.fromJson(Map<String, dynamic> json) =>
       _$BillingItemFromJson(json);
   Map<String, dynamic> toJson() => _$BillingItemToJson(this);
 
-  DataGridRow toDataGridRow() {
+  DataGridRow toDataGridRow(String? name) {
+
     return DataGridRow(cells: <DataGridCell>[
-      DataGridCell<int>(columnName: 'srNo', value: srNo),
+      const DataGridCell<int>(columnName: 'srNo', value: 101),
       DataGridCell<int>(columnName: 'itemId', value: itemId),
-      DataGridCell<String>(columnName: 'itemName', value: itemName),
+      DataGridCell<String>(
+          columnName: 'itemName', value: itemName.isEmpty ? name : itemName),
       DataGridCell<int>(columnName: 'itemQuantity', value: itemQuantity),
       DataGridCell<double>(columnName: 'itemRate', value: itemRate),
       DataGridCell<double>(columnName: 'itemAmount', value: itemAmount),
     ]);
+    
   }
 }

@@ -17,6 +17,9 @@ class Item {
 
   late double itemAmount;
 
+  bool available = true;
+  int availableQty = 99999;
+
   factory Item.fromJson(Map<String, dynamic> json) => _$ItemFromJson(json);
   Map<String, dynamic> toJson() => _$ItemToJson(this);
 

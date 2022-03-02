@@ -40,6 +40,10 @@ dependencies:
   syncfusion_flutter_datagrid: ^19.4.48
   fluent_ui: ^3.8.0
   json_annotation: ^4.4.0
+  csv: ^5.0.0
+  path_provider: ^2.0.2
+  permission_handler: ^7.1.0
+  file_picker: ^3.0.4
 
 dev_dependencies:
   flutter_test:

@@ -1,5 +1,4 @@
 import 'package:json_annotation/json_annotation.dart';
-import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 
 import 'billing_item.dart';
 
@@ -39,9 +38,4 @@ class BillingData {
   factory BillingData.fromJson(Map<String, dynamic> json) =>
       _$BillingDataFromJson(json);
   Map<String, dynamic> toJson() => _$BillingDataToJson(this);
-
-  // ToDo extract generating rows outside BillingData Model
-  List<DataGridRow> getDataGridRow() {
-    return items.map((item) => (item.toDataGridRow())).toList();
-  }
 }

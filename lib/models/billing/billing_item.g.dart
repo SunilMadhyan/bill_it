@@ -12,7 +12,6 @@ BillingItem _$BillingItemFromJson(Map<String, dynamic> json) => BillingItem(
       (json['itemRate'] as num).toDouble(),
     )
       ..itemName = json['itemName'] as String
-      ..srNo = json['srNo'] as int
       ..itemAmount = (json['itemAmount'] as num).toDouble();
 
 Map<String, dynamic> _$BillingItemToJson(BillingItem instance) =>
@@ -21,6 +20,5 @@ Map<String, dynamic> _$BillingItemToJson(BillingItem instance) =>
       'itemName': instance.itemName,
       'itemQuantity': instance.itemQuantity,
       'itemRate': instance.itemRate,
-      'srNo': instance.srNo,
       'itemAmount': instance.itemAmount,
     };
