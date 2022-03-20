@@ -29,10 +29,9 @@ class BillingItem {
       _$BillingItemFromJson(json);
   Map<String, dynamic> toJson() => _$BillingItemToJson(this);
 
-  DataGridRow toDataGridRow(String? name) {
-
+  DataGridRow toDataGridRow(int index, String? name) {
     return DataGridRow(cells: <DataGridCell>[
-      const DataGridCell<int>(columnName: 'srNo', value: 101),
+      DataGridCell<int>(columnName: 'srNo', value: index + 1),
       DataGridCell<int>(columnName: 'itemId', value: itemId),
       DataGridCell<String>(
           columnName: 'itemName', value: itemName.isEmpty ? name : itemName),
@@ -40,6 +39,5 @@ class BillingItem {
       DataGridCell<double>(columnName: 'itemRate', value: itemRate),
       DataGridCell<double>(columnName: 'itemAmount', value: itemAmount),
     ]);
-    
   }
 }

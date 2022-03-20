@@ -7,17 +7,19 @@ part of 'billing_data.dart';
 // **************************************************************************
 
 BillingData _$BillingDataFromJson(Map<String, dynamic> json) => BillingData(
-      json['billNo'] as int,
-      json['billDate'],
-      json['partyName'] as String,
-      (json['discountApplied'] as num).toDouble(),
-      (json['packingCharge'] as num).toDouble(),
-      (json['totalNetAmount'] as num).toDouble(),
-      (json['totalAmount'] as num).toDouble(),
-      json['billNotes'] as String,
-      (json['items'] as List<dynamic>)
-          .map((e) => BillingItem.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      billNo: json['billNo'] as int? ?? 0,
+      billDate: json['billDate'],
+      partyName: json['partyName'] as String? ?? '',
+      partyGSTNo: json['partyGSTNo'] as String? ?? '',
+      discountApplied: (json['discountApplied'] as num?)?.toDouble() ?? 0,
+      packingCharge: (json['packingCharge'] as num?)?.toDouble() ?? 0,
+      totalNetAmount: (json['totalNetAmount'] as num?)?.toDouble() ?? 0,
+      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
+      billNotes: json['billNotes'] as String? ?? '',
+      items: (json['items'] as List<dynamic>?)
+              ?.map((e) => BillingItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const [],
     );
 
 Map<String, dynamic> _$BillingDataToJson(BillingData instance) =>
@@ -25,6 +27,7 @@ Map<String, dynamic> _$BillingDataToJson(BillingData instance) =>
       'billNo': instance.billNo,
       'billDate': instance.billDate,
       'partyName': instance.partyName,
+      'partyGSTNo': instance.partyGSTNo,
       'discountApplied': instance.discountApplied,
       'totalAmount': instance.totalAmount,
       'totalNetAmount': instance.totalNetAmount,

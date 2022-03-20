@@ -21,15 +21,16 @@ BillingItem item10 =
     BillingItem.withName(1002, 'Asian Paint Gold 480ml', 6, 240);
 
 BillingData billingData = BillingData(
-    001,
-    DateTime.now(),
-    'Sunil Madhyan',
-    10,
-    0,
-    5000,
-    4500,
-    'Bill from db',
-    [item1, item2, item3, item4, item5, item6, item7, item8, item9, item10]);
+  billNo: 001,
+  billDate: DateTime.now(),
+  partyName: 'Sunil Madhyan',
+  partyGSTNo: '2165413232',
+  discountApplied: 10,
+  packingCharge: 652,
+  totalNetAmount: 6520.0,
+  totalAmount: 5868.0,
+  billNotes: 'Bill from db',
+);
 
 Item _item1 = Item(10001, '1 kg Nails', 1, 100);
 Item _item2 = Item(10002, 'Asian Paint Red 500g', 1, 240);
@@ -52,10 +53,16 @@ class AppDB {
 
   doSomeWork() async {
     List<List<dynamic>> temp = await openFile();
-    temp.forEach((e) => {
-          availableItems.putIfAbsent(e[0].toString(),
-              () => Item(e[0], e[1], e[2], double.tryParse(e[3].toString())!))
-        });
+    for (var item in temp) {
+      availableItems.putIfAbsent(
+          item[0].toString(),
+          () => Item(
+              item[0], item[1], item[2], double.tryParse(item[3].toString())!));
+    }
+    // temp.forEach((e) => {
+    //       availableItems.putIfAbsent(e[0].toString(),
+    //           () => Item(e[0], e[1], e[2], double.tryParse(e[3].toString())!))
+    //     });
   }
 
   openFile() async {

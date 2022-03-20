@@ -1,15 +1,15 @@
-import 'package:bill_it/models/billing/billing_item.dart';
 import 'package:syncfusion_flutter_datagrid/datagrid.dart';
 import 'package:collection/collection.dart';
 import 'package:fluent_ui/fluent_ui.dart';
 
+import 'billing/billing_data.dart';
 import 'item/item.dart';
 
 class BillingDataSource extends DataGridSource {
   @override
   List<DataGridRow> get rows => _currentBillingData;
   Map<String, Item> availableItems;
-  List<BillingItem> currentBillingData;
+  BillingData currentBillingData;
   List<DataGridRow> _currentBillingData = [];
   dynamic newCellValue;
   Function onUpdate;
@@ -21,10 +21,13 @@ class BillingDataSource extends DataGridSource {
   }
 
   void buildDataGridRows() {
-    _currentBillingData = currentBillingData
-        .map<DataGridRow>(
-            (e) => e.toDataGridRow(availableItems['${e.itemId}']?.itemName))
+    _currentBillingData = currentBillingData.items
+        .mapIndexed((index, element) => element.toDataGridRow(
+            index, availableItems['${element.itemId}']?.itemName))
         .toList();
+    // .map<DataGridRow>(
+    //     (e) => e.toDataGridRow(availableItems['${e.itemId}']?.itemName))
+    // .toList();
   }
 
   @override
@@ -64,7 +67,7 @@ class BillingDataSource extends DataGridSource {
           .value;
       _currentBillingData[dataRowIndex].getCells()[5] = DataGridCell<double>(
           columnName: 'itemAmount', value: newVal! * money.toDouble());
-      currentBillingData.elementAt(dataRowIndex).itemRate = newVal;
+      currentBillingData.items.elementAt(dataRowIndex).itemRate = newVal;
       onUpdate();
     }
 
@@ -77,7 +80,7 @@ class BillingDataSource extends DataGridSource {
           .value;
       _currentBillingData[dataRowIndex].getCells()[5] = DataGridCell<double>(
           columnName: 'itemAmount', value: newVal!.toDouble() * money);
-      currentBillingData.elementAt(dataRowIndex).itemQuantity = newVal;
+      currentBillingData.items.elementAt(dataRowIndex).itemQuantity = newVal;
       onUpdate();
     }
   }
@@ -119,5 +122,4 @@ class BillingDataSource extends DataGridSource {
   void updateDataGridSource() {
     notifyListeners();
   }
-  
 }
